@@ -1,0 +1,119 @@
+
+def gv
+
+pipeline {
+   agent {
+	   node {label 'ms_build_node'}
+	}
+	environment {
+	   VAR = '1.2.3'
+		BUILD_STATUS = 'true'
+	}
+	 
+	triggers { 
+      pollSCM '*/5 * * * *' 
+   }
+   stages {
+      stage('load script') {
+         steps {
+            script {
+               gv = load("script.groovy")
+            }
+         }        
+      }
+      stage('Build') {
+         when {
+            expression {
+               BRANCH_NAME == 'prod' || BRANCH_NAME == 'test'
+            }
+         }
+		   steps {
+            script{
+               gv.buildapp()  
+              			   
+            }
+	      } 
+      }
+	   stage('Backup and Stop') {
+         stages{
+            stage('stagging') {  
+               when {
+                  expression {
+                     BRANCH_NAME == 'test'
+                  }
+               }
+               agent {
+                  node {
+		               label 'stagging_server'
+	              	}
+               }
+		         steps {
+                  script {
+                        gv.backupapp()
+                     }
+			      }
+            }
+
+               stage('Production') {  
+                  when {
+                     expression {
+                        BRANCH_NAME == 'prod'
+                     }
+                  }
+                  agent {
+                     node {
+                        label 'production_server'
+                     }
+                  }
+		            steps {
+                     script{
+                        gv.backupapp()
+                     }
+			         }
+               }
+            }
+         }
+          
+	   stage('Deploy & Start') {
+         stages{
+		      stage('stagging'){
+               when{
+                  expression{
+                     BRANCH_NAME == 'test'
+                  }
+               }
+               agent {
+                  node{
+                     label 'stagging_server'
+                  }
+               }
+               steps{
+                  script{
+                     gv.deployapp()
+                  }
+
+               }
+
+            }
+            stage('production'){
+               when{
+                  expression{
+                     BRANCH_NAME == 'prod'
+                  }
+               }
+               agent {
+                  node{
+                     label 'production_server'
+                  }
+               }
+               steps{
+                  script{
+                     gv.deployapp()
+                  }
+
+               }
+            }
+	      }
+      }
+	}
+}

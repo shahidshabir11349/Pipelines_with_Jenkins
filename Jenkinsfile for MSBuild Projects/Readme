@@ -1,0 +1,5 @@
+1. This jenkins file is based on three stages Build, Backup and Deploy
+2. its a multi branch pipeline which is currently configured for two branched but more can be adde
+3. It Builds .net applications when a jenkins worker node have Respective 
+   MS Visual Studio Build Tools installed and configured on windows machine
+4. groovy script is also loaded into jenkins file
